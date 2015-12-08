@@ -12,6 +12,7 @@
 
 const express = require('express');
 const findPort = require('find-port');
+const cors = require('cors');
 const http = require('http');
 const makeApp = require('./make_app');
 const opn = require('opn');
@@ -63,7 +64,11 @@ function startWithPort(options) {
     res.redirect(301, `/components/${polyserve.packageName}/`);
   });
 
-  app.use('/components/', polyserve);
+  if (options.cors) {
+    app.use('/components/', cors(), polyserve);
+  } else {
+    app.use('/components/', polyserve);
+  }
 
   let server = http.createServer(app);
   let serverStartedResolve;

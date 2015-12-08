@@ -16,6 +16,7 @@
     "polyserve"
   ],
   "dependencies": {
+    "cors": "^2.7.1",
     "express": "^4.8.5",
     "find-port": "^1.0.1",
     "minimist": "^1.1.1",

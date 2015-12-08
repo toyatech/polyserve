@@ -24,6 +24,7 @@ Options:
   -b <browsername> use this browser instead of default
                    (ex: 'Google Chrome Canary')
   -H <hostname>    use this hostname instead of localhost
+  --cors           enable permissive cors headers in server responses
 `);
   process.exit(0);
 }
@@ -34,7 +35,8 @@ resolve('polyserve', {basedir: process.cwd()}, function(error, path) {
     port: argv.p,
     page: argv.o,
     host: argv.H,
-    browser: argv.b
+    browser: argv.b,
+    cors: argv.cors
   }).catch((e) => {
     process.exit(69);
   });

@@ -12,13 +12,25 @@
 
 import * as express from 'express';
 import * as findPort from 'find-port';
+import * as fs from 'fs';
 import * as http from 'http';
+import * as https from 'https';
 import * as opn from 'opn';
 import * as path from 'path';
 import * as send from 'send';
 import * as url from 'url';
 
 import { makeApp } from './make_app';
+
+export interface HttpServer extends http.Server {
+  kind: 'http'
+}
+
+export interface HttpsServer extends https.Server {
+  kind: 'https'
+}
+
+export type Server = HttpServer | HttpsServer;
 
 export interface ServerOptions {
 
@@ -30,6 +42,12 @@ export interface ServerOptions {
 
   /** The hostname to serve from */
   hostname?: string;
+
+  /** The private key to use for SSL */
+  key?: string;
+
+  /** The public x509 certificate to use. */
+  cert?: string;
 
   /** Whether to open the browser when run **/
   open?: boolean;
@@ -60,7 +78,7 @@ function applyDefaultOptions(options: ServerOptions): ServerOptions {
 /**
  * @return {Promise} A Promise that completes when the server has started.
  */
-export function startServer(options: ServerOptions): Promise<http.Server> {
+export function startServer(options: ServerOptions): Promise<Server> {
   return new Promise((resolve, reject) => {
     options = options || {};
     if (options.port) {
@@ -71,7 +89,7 @@ export function startServer(options: ServerOptions): Promise<http.Server> {
         resolve(options);
       });
     }
-  }).then<http.Server>((opts) => startWithPort(opts));
+  }).then<Server>((opts) => startWithPort(opts));
 }
 
 const portInUseMessage = (port: number) => `
@@ -132,10 +150,15 @@ function openWebPage(url: string, withBrowser?: string) {
   });
 }
 
+export function getProtocol(options: ServerOptions) {
+  return fs.statSync(options.key).isFile() && fs.statSync(options.cert).isFile() ? 'http' : 'https';
+}
+
 function startWithPort(userOptions: ServerOptions) {
   let options = applyDefaultOptions(userOptions);
+  let protocol = getProtocol(options);
   let app = getApp(options);
-  let server = http.createServer(app);
+  let server = protocol === 'http' ? http.createServer(app) : https.createServer(app);
   let serverStartedResolve: (r: any) => void;
   let serverStartedReject: (r: any) => void;
   let serverStartedPromise = new Promise((resolve, reject) => {
@@ -154,7 +177,7 @@ function startWithPort(userOptions: ServerOptions) {
   });
 
   let serverUrl = {
-    protocol: 'http',
+    protocol: protocol,
     hostname: options.hostname,
     port: `${options.port}`,
   };
